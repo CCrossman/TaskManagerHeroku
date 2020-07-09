@@ -24,10 +24,12 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
+import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
 import java.sql.SQLException;
 
@@ -35,39 +37,40 @@ import java.sql.SQLException;
 @SpringBootApplication
 public class Main {
 
-  @Value("${spring.datasource.url}")
-  private String dbUrl;
+	@Value("${spring.datasource.url}")
+	private String dbUrl;
 
-  @Autowired
-  private DataSource dataSource;
+	@Autowired
+	private DataSource dataSource;
 
-  public static void main(String[] args) throws Exception {
-    SpringApplication.run(Main.class, args);
-  }
+	public static void main(String[] args) throws Exception {
+		SpringApplication.run(Main.class, args);
+	}
 
-  @RequestMapping("/")
-  String index() {
-    return "index";
-  }
+//  @RequestMapping("/")
+//  String index() {
+//    return "index";
+//  }
 
-  @RequestMapping("/todo")
-  String todo() {
-  	return "todo";
-  }
+	@RequestMapping("/todo")
+	String todo(HttpSession session, Model model) {
+		if (session == null || session.getAttribute("username") == null) {
+			model.addAttribute("auth", new Auth());
+			return "redirect:/login";
+		}
+		System.err.println("session: " + session.getId());
+		System.err.println("username: " + session.getAttribute("username"));
+		return "todo";
+	}
 
-  @RequestMapping("/login")
-  String login() {
-  	return "login";
-  }
-
-  @RequestMapping(value = "/login", method = {RequestMethod.POST, RequestMethod.PUT})
-  String login(@ModelAttribute Auth auth) {
-  	if (auth == null || auth.getUsername() == null || auth.getPassword() == null) {
-	    return "login";
-    }
-  	System.out.println("? " + auth);
-  	return "login";
-  }
+	@RequestMapping(value = "/login", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT})
+	String login(@ModelAttribute Auth auth, HttpSession session) {
+		if (auth == null || auth.getUsername() == null || auth.getPassword() == null) {
+			return "login";
+		}
+		session.setAttribute("username", auth.getUsername());
+		return "redirect:/todo";
+	}
 
 //  @RequestMapping("/db")
 //  String db(Map<String, Object> model) {
@@ -90,15 +93,15 @@ public class Main {
 //    }
 //  }
 
-  @Bean
-  public DataSource dataSource() throws SQLException {
-    if (dbUrl == null || dbUrl.isEmpty()) {
-      return new HikariDataSource();
-    } else {
-      HikariConfig config = new HikariConfig();
-      config.setJdbcUrl(dbUrl);
-      return new HikariDataSource(config);
-    }
-  }
+	@Bean
+	public DataSource dataSource() throws SQLException {
+		if (dbUrl == null || dbUrl.isEmpty()) {
+			return new HikariDataSource();
+		} else {
+			HikariConfig config = new HikariConfig();
+			config.setJdbcUrl(dbUrl);
+			return new HikariDataSource(config);
+		}
+	}
 
 }
