@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<body>
+
+<div id="id01">
+    <form class="modal-content animate" th:action="@{/signup}" th:object="${auth}" method="post">
+        <div class="container">
+            <label><b>Username</b><input type="text" placeholder="Enter Username" name="uname" required th:field="*{username}" /></label>
+            <label><b>Password</b><input type="password" placeholder="Enter Password" name="psw" required th:field="*{password}" /></label>
+            <button type="submit">Signup</button>
+        </div>
+        <p>By creating an account you agree to our <a href="#" style="color:dodgerblue">Terms & Privacy</a>.</p>
+    </form>
+</div>
+
+</body>
+</html>

@@ -52,6 +52,15 @@ public class Main {
 //    return "index";
 //  }
 
+	@RequestMapping(value = "/signup", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT})
+	String signup(@ModelAttribute Auth auth) {
+		if (auth == null || auth.getUsername() == null || auth.getPassword() == null) {
+			return "signup";
+		}
+		setAuthorized(auth);
+		return "redirect:/login";
+	}
+
 	@RequestMapping("/todo")
 	String todo(HttpSession session, Model model) {
 		if (session == null || session.getAttribute("username") == null) {
@@ -68,8 +77,19 @@ public class Main {
 		if (auth == null || auth.getUsername() == null || auth.getPassword() == null) {
 			return "login";
 		}
-		session.setAttribute("username", auth.getUsername());
-		return "redirect:/todo";
+		if (isAuthorized(auth)) {
+			session.setAttribute("username", auth.getUsername());
+			return "redirect:/todo";
+		}
+		return "redirect:/login";
+	}
+
+	private boolean isAuthorized(Auth auth) {
+		return auth.getUsername().equals("foo") && auth.getPassword().equals("bar");
+	}
+
+	private void setAuthorized(Auth auth) {
+		System.err.println("setAuthorized(" + auth + ")");
 	}
 
 //  @RequestMapping("/db")
