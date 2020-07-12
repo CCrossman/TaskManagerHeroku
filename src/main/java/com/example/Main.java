@@ -18,6 +18,7 @@ package com.example;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.postgresql.shaded.com.ongres.scram.common.bouncycastle.base64.Base64Encoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -29,13 +30,32 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
+import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 @Controller
 @SpringBootApplication
 public class Main {
+	public static final String SECRET_KEY = "secret key";
+	public static final String SALT = "salt";
 
 	@Value("${spring.datasource.url}")
 	private String dbUrl;
@@ -84,12 +104,52 @@ public class Main {
 		return "redirect:/login";
 	}
 
+	private final Map<String,String> authorizations = new HashMap<>();
+
 	private boolean isAuthorized(Auth auth) {
-		return auth.getUsername().equals("foo") && auth.getPassword().equals("bar");
+		try {
+			return encodePassword(auth.getPassword()).equals(authorizations.get(auth.getUsername()));
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
 
 	private void setAuthorized(Auth auth) {
-		System.err.println("setAuthorized(" + auth + ")");
+		try {
+			System.err.println("setAuthorized(" + auth + ")");
+			authorizations.put(auth.getUsername(), encodePassword(auth.getPassword()));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+//		try (Connection connection = dataSource.getConnection()) {
+//			Statement stmt = connection.createStatement();
+//			stmt.executeUpdate("CREATE TABLE IF NOT EXISTS users (id, encodedpwd, timestamp)");
+//			stmt.executeUpdate("INSERT INTO users VALUES (" + auth.getUsername() + ", " + encodePassword(auth.getPassword()) + ", now())");
+//			System.err.println("done!");
+//		} catch (SQLException | IOException e) {
+//			e.printStackTrace();
+//		}
+	}
+
+	// https://howtodoinjava.com/security/aes-256-encryption-decryption/
+	private static String encodePassword(String password) throws IOException {
+		try {
+			byte[] iv = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+			IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
+
+			SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+			KeySpec spec = new PBEKeySpec(SECRET_KEY.toCharArray(), SALT.getBytes(), 65536, 256);
+			SecretKey tmp = factory.generateSecret(spec);
+			SecretKeySpec secretKeySpec = new SecretKeySpec(tmp.getEncoded(), "AES");
+
+			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+			cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivParameterSpec);
+			return Base64.getEncoder().encodeToString(cipher.doFinal(password.getBytes(StandardCharsets.UTF_8)));
+		} catch (InvalidKeySpecException | NoSuchAlgorithmException | BadPaddingException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException | IllegalBlockSizeException e) {
+			throw new IOException(e);
+		}
 	}
 
 //  @RequestMapping("/db")
