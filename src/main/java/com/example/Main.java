@@ -18,9 +18,7 @@ package com.example;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.postgresql.shaded.com.ongres.scram.common.bouncycastle.base64.Base64Encoder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -37,7 +35,6 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -45,11 +42,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
 
 @Controller
 @SpringBootApplication
@@ -57,8 +53,8 @@ public class Main {
 	public static final String SECRET_KEY = "secret key";
 	public static final String SALT = "salt";
 
-	@Value("${spring.datasource.url}")
-	private String dbUrl;
+//	@Value("${spring.datasource.url}")
+//	private String dbUrl;
 
 	@Autowired
 	private DataSource dataSource;
@@ -87,8 +83,6 @@ public class Main {
 			model.addAttribute("auth", new Auth());
 			return "redirect:/login";
 		}
-		System.err.println("session: " + session.getId());
-		System.err.println("username: " + session.getAttribute("username"));
 		return "todo";
 	}
 
@@ -104,33 +98,30 @@ public class Main {
 		return "redirect:/login";
 	}
 
-	private final Map<String,String> authorizations = new HashMap<>();
-
 	private boolean isAuthorized(Auth auth) {
-		try {
-			return encodePassword(auth.getPassword()).equals(authorizations.get(auth.getUsername()));
-		} catch (IOException e) {
+		try (Connection connection = dataSource.getConnection()) {
+			final String pwd = encodePassword(auth.getPassword());
+			final ResultSet resultSet = connection.createStatement().executeQuery("SELECT username from users where password = \'" + pwd + "\'");
+			while (resultSet.next()) {
+				if (auth.getUsername().equals(resultSet.getString("username"))) {
+					return true;
+				}
+			}
+			return false;
+		} catch (IOException | SQLException e) {
 			e.printStackTrace();
 			return false;
 		}
 	}
 
 	private void setAuthorized(Auth auth) {
-		try {
-			System.err.println("setAuthorized(" + auth + ")");
-			authorizations.put(auth.getUsername(), encodePassword(auth.getPassword()));
-		} catch (IOException e) {
+		try (Connection connection = dataSource.getConnection()) {
+			Statement stmt = connection.createStatement();
+			final String sql = "INSERT INTO users VALUES (\'" + auth.getUsername() + "\', \'" + encodePassword(auth.getPassword()) + "\', now())";
+			stmt.executeUpdate(sql);
+		} catch (SQLException | IOException e) {
 			e.printStackTrace();
 		}
-
-//		try (Connection connection = dataSource.getConnection()) {
-//			Statement stmt = connection.createStatement();
-//			stmt.executeUpdate("CREATE TABLE IF NOT EXISTS users (id, encodedpwd, timestamp)");
-//			stmt.executeUpdate("INSERT INTO users VALUES (" + auth.getUsername() + ", " + encodePassword(auth.getPassword()) + ", now())");
-//			System.err.println("done!");
-//		} catch (SQLException | IOException e) {
-//			e.printStackTrace();
-//		}
 	}
 
 	// https://howtodoinjava.com/security/aes-256-encryption-decryption/
@@ -175,13 +166,11 @@ public class Main {
 
 	@Bean
 	public DataSource dataSource() throws SQLException {
-		if (dbUrl == null || dbUrl.isEmpty()) {
-			return new HikariDataSource();
-		} else {
-			HikariConfig config = new HikariConfig();
-			config.setJdbcUrl(dbUrl);
-			return new HikariDataSource(config);
-		}
+		HikariConfig config = new HikariConfig();
+		//config.setJdbcUrl(dbUrl);
+		config.setJdbcUrl("jdbc:postgresql://localhost:5432/test?user=postgres&password=calumon64");
+		config.setDriverClassName("org.postgresql.Driver");
+		return new HikariDataSource(config);
 	}
 
 }
