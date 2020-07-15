@@ -74,7 +74,7 @@ public class Main {
 
 	@Bean
 	public DataSource dataSource() {
-		String db  = System.getenv("DATABASE_URL");
+		String db  = System.getenv("db-url");
 		String usr = System.getenv("db-username");
 		String pwd = System.getenv("db-password");
 
