@@ -166,9 +166,12 @@ public class Main {
 
 	@Bean
 	public DataSource dataSource() throws SQLException {
+		String usr = System.getenv("db-username");
+		String pwd = System.getenv("db-password");
+
 		HikariConfig config = new HikariConfig();
 		//config.setJdbcUrl(dbUrl);
-		config.setJdbcUrl("jdbc:postgresql://localhost:5432/test?user=postgres&password=calumon64");
+		config.setJdbcUrl("jdbc:postgresql://localhost:5432/test?user=" + usr + "&password=" + pwd);
 		config.setDriverClassName("org.postgresql.Driver");
 		return new HikariDataSource(config);
 	}
