@@ -23,14 +23,24 @@ import java.util.Base64;
 
 @Component
 public final class DbAuthority implements Authority {
+	private static final String CREATE_IF_NOT_EXISTS = "CREATE TABLE IF NOT EXISTS public.users\n" +
+			"(\n" +
+			"    username text COLLATE pg_catalog.\"default\" NOT NULL,\n" +
+			"    password text COLLATE pg_catalog.\"default\" NOT NULL,\n" +
+			"    \"timestamp\" timestamp with time zone NOT NULL,\n" +
+			"    CONSTRAINT users_pkey PRIMARY KEY (username)\n" +
+			")";
 
 	@Autowired
 	private DataSource dataSource;
 
 	public boolean isAuthorized(Auth auth) {
 		try (Connection connection = dataSource.getConnection()) {
+			final Statement stmt = connection.createStatement();
+			stmt.executeUpdate(CREATE_IF_NOT_EXISTS);
+
 			final String pwd = encodePassword(auth.getPassword());
-			final ResultSet resultSet = connection.createStatement().executeQuery("SELECT username from users where password = \'" + pwd + "\'");
+			final ResultSet resultSet = stmt.executeQuery("SELECT username from users where password = \'" + pwd + "\'");
 			while (resultSet.next()) {
 				if (auth.getUsername().equals(resultSet.getString("username"))) {
 					return true;
@@ -46,8 +56,8 @@ public final class DbAuthority implements Authority {
 	public void setAuthorized(Auth auth) {
 		try (Connection connection = dataSource.getConnection()) {
 			Statement stmt = connection.createStatement();
-			final String sql = "INSERT INTO users VALUES (\'" + auth.getUsername() + "\', \'" + encodePassword(auth.getPassword()) + "\', now())";
-			stmt.executeUpdate(sql);
+			stmt.executeUpdate(CREATE_IF_NOT_EXISTS);
+			stmt.executeUpdate("INSERT INTO users VALUES (\'" + auth.getUsername() + "\', \'" + encodePassword(auth.getPassword()) + "\', now())");
 		} catch (SQLException | IOException e) {
 			e.printStackTrace();
 		}
