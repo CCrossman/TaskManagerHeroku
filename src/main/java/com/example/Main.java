@@ -50,11 +50,6 @@ import java.util.Base64;
 @Controller
 @SpringBootApplication
 public class Main {
-	public static final String SECRET_KEY = "secret key";
-	public static final String SALT = "salt";
-
-//	@Value("${spring.datasource.url}")
-//	private String dbUrl;
 
 	@Autowired
 	private DataSource dataSource;
@@ -62,11 +57,6 @@ public class Main {
 	public static void main(String[] args) throws Exception {
 		SpringApplication.run(Main.class, args);
 	}
-
-//  @RequestMapping("/")
-//  String index() {
-//    return "index";
-//  }
 
 	@RequestMapping(value = "/signup", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT})
 	String signup(@ModelAttribute Auth auth) {
@@ -127,11 +117,14 @@ public class Main {
 	// https://howtodoinjava.com/security/aes-256-encryption-decryption/
 	private static String encodePassword(String password) throws IOException {
 		try {
+			String secretKey = System.getenv("enc-secret");
+			String salt = System.getenv("enc-salt");
+
 			byte[] iv = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 			IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
 
 			SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-			KeySpec spec = new PBEKeySpec(SECRET_KEY.toCharArray(), SALT.getBytes(), 65536, 256);
+			KeySpec spec = new PBEKeySpec(secretKey.toCharArray(), salt.getBytes(), 65536, 256);
 			SecretKey tmp = factory.generateSecret(spec);
 			SecretKeySpec secretKeySpec = new SecretKeySpec(tmp.getEncoded(), "AES");
 
@@ -143,34 +136,12 @@ public class Main {
 		}
 	}
 
-//  @RequestMapping("/db")
-//  String db(Map<String, Object> model) {
-//    try (Connection connection = dataSource.getConnection()) {
-//      Statement stmt = connection.createStatement();
-//      stmt.executeUpdate("CREATE TABLE IF NOT EXISTS ticks (tick timestamp)");
-//      stmt.executeUpdate("INSERT INTO ticks VALUES (now())");
-//      ResultSet rs = stmt.executeQuery("SELECT tick FROM ticks");
-//
-//      ArrayList<String> output = new ArrayList<String>();
-//      while (rs.next()) {
-//        output.add("Read from DB: " + rs.getTimestamp("tick"));
-//      }
-//
-//      model.put("records", output);
-//      return "db";
-//    } catch (Exception e) {
-//      model.put("message", e.getMessage());
-//      return "error";
-//    }
-//  }
-
 	@Bean
 	public DataSource dataSource() throws SQLException {
 		String usr = System.getenv("db-username");
 		String pwd = System.getenv("db-password");
 
 		HikariConfig config = new HikariConfig();
-		//config.setJdbcUrl(dbUrl);
 		config.setJdbcUrl("jdbc:postgresql://localhost:5432/test?user=" + usr + "&password=" + pwd);
 		config.setDriverClassName("org.postgresql.Driver");
 		return new HikariDataSource(config);
