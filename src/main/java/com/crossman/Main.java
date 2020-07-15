@@ -79,7 +79,7 @@ public class Main {
 		String pwd = System.getenv("db-password");
 
 		HikariConfig config = new HikariConfig();
-		config.setJdbcUrl("jdbc:" + db + "?user=" + usr + "&password=" + pwd);
+		config.setJdbcUrl(db + "?user=" + usr + "&password=" + pwd);
 		config.setDriverClassName("org.postgresql.Driver");
 		return new HikariDataSource(config);
 	}
