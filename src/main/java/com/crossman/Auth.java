@@ -1,4 +1,4 @@
-package com.example;
+package com.crossman;
 
 import java.util.Objects;
 
