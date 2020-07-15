@@ -74,12 +74,12 @@ public class Main {
 
 	@Bean
 	public DataSource dataSource() {
-		String db  = System.getenv("db-name");
+		String db  = System.getenv("DATABASE_URL");
 		String usr = System.getenv("db-username");
 		String pwd = System.getenv("db-password");
 
 		HikariConfig config = new HikariConfig();
-		config.setJdbcUrl("jdbc:postgresql://localhost:5432/" + db + "?user=" + usr + "&password=" + pwd);
+		config.setJdbcUrl("jdbc:" + db + "?user=" + usr + "&password=" + pwd);
 		config.setDriverClassName("org.postgresql.Driver");
 		return new HikariDataSource(config);
 	}
