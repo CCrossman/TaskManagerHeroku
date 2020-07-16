@@ -30,6 +30,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
+import java.util.Arrays;
+import java.util.Collections;
 
 @Controller
 @SpringBootApplication
@@ -57,6 +59,7 @@ public class Main {
 			model.addAttribute("auth", new Auth());
 			return "redirect:/login";
 		}
+		model.addAttribute("tasks", Arrays.asList(new Task("Hit the Gym", false), new Task("Pay bills", true)));
 		return "todo";
 	}
 

@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html xmlns:th="https://www.thymeleaf.org">
 
 <head>
-    <title>Java Getting Started on Heroku</title>
-<!--    <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" />-->
+    <title>Heroku Task Manager</title>
     <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
     <link rel="stylesheet" type="text/css" href="/stylesheets/todo.css" />
 </head>
@@ -17,6 +16,7 @@
 </div>
 
 <ul id="myUL">
+    <li th:each="task: ${tasks}" th:classappend="${task.checked ? 'checked' : ''}" th:text="${task.description}" ></li>
 </ul>
 
 </body>
