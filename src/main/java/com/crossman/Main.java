@@ -47,6 +47,7 @@ public class Main {
 
 	@RequestMapping(value = "/save", method = RequestMethod.POST)
 	String save(HttpSession session, Model model, @RequestBody List<Task> tasks) {
+		System.err.println("save(" + tasks + ")");
 		model.addAttribute("tasks", tasks);
 		return todo(session,model);
 	}
@@ -67,7 +68,7 @@ public class Main {
 			return "redirect:/login";
 		}
 		if (!model.containsAttribute("tasks")) {
-			model.addAttribute("tasks", Arrays.asList(new Task("Hit the Gym", false), new Task("Pay bills", true)));
+			model.addAttribute("tasks", Arrays.asList(new Task("Hit the Gym"), new Task("Pay bills")));
 		}
 		return "todo";
 	}

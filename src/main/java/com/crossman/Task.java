@@ -6,22 +6,16 @@ import java.util.Objects;
 
 public final class Task {
 	private String description;
-	private boolean checked;
 
 	@JsonCreator
 	protected Task() {}
 
-	public Task(String description, boolean checked) {
+	public Task(String description) {
 		this.description = description;
-		this.checked = checked;
 	}
 
 	public String getDescription() {
 		return description;
-	}
-
-	public boolean isChecked() {
-		return checked;
 	}
 
 	@Override
@@ -29,20 +23,18 @@ public final class Task {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		Task task = (Task) o;
-		return isChecked() == task.isChecked() &&
-				Objects.equals(getDescription(), task.getDescription());
+		return Objects.equals(getDescription(), task.getDescription());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(getDescription(), isChecked());
+		return Objects.hash(getDescription());
 	}
 
 	@Override
 	public String toString() {
 		return "Task{" +
 				"description='" + description + '\'' +
-				", checked=" + checked +
 				'}';
 	}
 }
