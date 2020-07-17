@@ -25,13 +25,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
 
 @Controller
 @SpringBootApplication
@@ -42,6 +43,12 @@ public class Main {
 
 	public static void main(String[] args) throws Exception {
 		SpringApplication.run(Main.class, args);
+	}
+
+	@RequestMapping(value = "/save", method = RequestMethod.POST)
+	String save(HttpSession session, Model model, @RequestBody List<Task> tasks) {
+		model.addAttribute("tasks", tasks);
+		return todo(session,model);
 	}
 
 	@RequestMapping(value = "/signup", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT})
@@ -59,7 +66,9 @@ public class Main {
 			model.addAttribute("auth", new Auth());
 			return "redirect:/login";
 		}
-		model.addAttribute("tasks", Arrays.asList(new Task("Hit the Gym", false), new Task("Pay bills", true)));
+		if (!model.containsAttribute("tasks")) {
+			model.addAttribute("tasks", Arrays.asList(new Task("Hit the Gym", false), new Task("Pay bills", true)));
+		}
 		return "todo";
 	}
 

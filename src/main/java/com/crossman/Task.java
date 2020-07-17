@@ -1,10 +1,15 @@
 package com.crossman;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import java.util.Objects;
 
 public final class Task {
-	private final String description;
-	private final boolean checked;
+	private String description;
+	private boolean checked;
+
+	@JsonCreator
+	protected Task() {}
 
 	public Task(String description, boolean checked) {
 		this.description = description;

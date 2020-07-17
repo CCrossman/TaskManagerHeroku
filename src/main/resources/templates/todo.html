@@ -5,6 +5,7 @@
     <title>Heroku Task Manager</title>
     <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
     <link rel="stylesheet" type="text/css" href="/stylesheets/todo.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 
 <body>
@@ -40,6 +41,7 @@
         close[i].onclick = function() {
             let div = this.parentElement;
             div.style.display = "none";
+            save();
         }
     }
 
@@ -48,6 +50,7 @@
     list.addEventListener('click', function(ev) {
         if (ev.target.tagName === 'LI') {
             ev.target.classList.toggle('checked');
+            save();
         }
     }, false);
 
@@ -71,6 +74,7 @@
             alert("You must write something!");
         } else {
             document.getElementById("myUL").appendChild(li);
+            save();
         }
         txtMyInput.value = "";
 
@@ -86,5 +90,34 @@
                 div.style.display = "none";
             }
         }
+    }
+
+    function save() {
+        let list = $.map($('#myUL').children(), function(el) {
+            let description = $(el).text();
+            let checked = $(el).is(".checked");
+
+            let json = new Object();
+            json.description = description;
+            json.checked = checked;
+            return json;
+        });
+        $.ajax({
+            type: "post",
+            contentType: "application/json",
+            url: "/save",
+            data: JSON.stringify(list),
+            dataType: 'json',
+            cache: false,
+            success: function (data) {
+                console.log("SUCCESS: ", data);
+            },
+            error: function (e) {
+                console.log("ERROR: ", e);
+            },
+            done: function (e) {
+                console.log("DONE");
+            }
+        })
     }
 </script>
