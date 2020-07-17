@@ -16,6 +16,7 @@
 
 package com.crossman;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +32,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
-import java.util.Arrays;
 import java.util.List;
 
 @Controller
@@ -41,14 +41,17 @@ public class Main {
 	@Autowired
 	private Authority authority;
 
+	@Autowired
+	private TaskRepository taskRepository;
+
 	public static void main(String[] args) throws Exception {
 		SpringApplication.run(Main.class, args);
 	}
 
 	@RequestMapping(value = "/save", method = RequestMethod.POST)
 	String save(HttpSession session, Model model, @RequestBody List<Task> tasks) {
-		System.err.println("save(" + tasks + ")");
 		model.addAttribute("tasks", tasks);
+		taskRepository.setTasksByUsername(getUsernameFromSession(session), tasks);
 		return todo(session,model);
 	}
 
@@ -68,9 +71,14 @@ public class Main {
 			return "redirect:/login";
 		}
 		if (!model.containsAttribute("tasks")) {
-			model.addAttribute("tasks", Arrays.asList(new Task("Hit the Gym"), new Task("Pay bills")));
+			model.addAttribute("tasks", taskRepository.getTasksByUsername(getUsernameFromSession(session)));
 		}
 		return "todo";
+	}
+
+	private static String getUsernameFromSession(HttpSession session) {
+		final Object o = session.getAttribute("username");
+		return o == null ? null : String.valueOf(o);
 	}
 
 	@RequestMapping(value = "/login", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT})
@@ -95,6 +103,11 @@ public class Main {
 		config.setJdbcUrl(db + "?user=" + usr + "&password=" + pwd);
 		config.setDriverClassName("org.postgresql.Driver");
 		return new HikariDataSource(config);
+	}
+
+	@Bean
+	public ObjectMapper objectMapper() {
+		return new ObjectMapper();
 	}
 
 }
