@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
+import java.util.Collections;
 import java.util.List;
 
 @Controller
@@ -56,12 +57,18 @@ public class Main {
 	}
 
 	@RequestMapping(value = "/signup", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT})
-	String signup(@ModelAttribute Auth auth) {
+	String signup(@ModelAttribute Auth auth, Model model) {
 		if (auth == null || auth.getUsername() == null || auth.getPassword() == null) {
 			return "signup";
 		}
-		authority.setAuthorized(auth);
-		return "redirect:/login";
+		try {
+			authority.setAuthorized(auth);
+			return "redirect:/login";
+		} catch (Exception e) {
+			e.printStackTrace();
+			model.addAttribute("errors", Collections.singletonList("There was a problem during signup."));
+			return "signup";
+		}
 	}
 
 	@RequestMapping("/todo")
@@ -82,7 +89,7 @@ public class Main {
 	}
 
 	@RequestMapping(value = "/login", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT})
-	String login(@ModelAttribute Auth auth, HttpSession session) {
+	String login(@ModelAttribute Auth auth, HttpSession session, Model model) {
 		if (auth == null || auth.getUsername() == null || auth.getPassword() == null) {
 			return "login";
 		}
@@ -90,7 +97,8 @@ public class Main {
 			session.setAttribute("username", auth.getUsername());
 			return "redirect:/todo";
 		}
-		return "redirect:/login";
+		model.addAttribute("errors", Collections.singletonList("Could not match username to password."));
+		return "login";
 	}
 
 	@Bean

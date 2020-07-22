@@ -1,7 +1,20 @@
 <!DOCTYPE html>
 <html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <style type="text/css">
+        .alert {
+            padding: 20px;
+            background-color: #f44336; /* Red */
+            color: white;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
 <body>
 
+<span>
+    <div class="alert" th:each="error: ${errors}" th:text="${error}"></div>
+</span>
 <div id="id01">
     <form class="modal-content animate" th:action="@{/signup}" th:object="${auth}" method="post">
         <div class="container">

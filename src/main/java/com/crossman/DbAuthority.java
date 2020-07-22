@@ -53,13 +53,13 @@ public final class DbAuthority implements Authority {
 		}
 	}
 
-	public void setAuthorized(Auth auth) {
+	public void setAuthorized(Auth auth) throws IOException {
 		try (Connection connection = dataSource.getConnection()) {
 			Statement stmt = connection.createStatement();
 			stmt.executeUpdate(CREATE_IF_NOT_EXISTS);
 			stmt.executeUpdate("INSERT INTO users VALUES (\'" + auth.getUsername() + "\', \'" + encodePassword(auth.getPassword()) + "\', now())");
-		} catch (SQLException | IOException e) {
-			e.printStackTrace();
+		} catch (SQLException e) {
+			throw new IOException(e);
 		}
 	}
 
