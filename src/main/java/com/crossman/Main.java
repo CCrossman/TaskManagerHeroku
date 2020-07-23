@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
@@ -57,12 +58,13 @@ public class Main {
 	}
 
 	@RequestMapping(value = "/signup", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT})
-	String signup(@ModelAttribute Auth auth, Model model) {
+	String signup(@ModelAttribute Auth auth, Model model, RedirectAttributes redirectAttributes) {
 		if (auth == null || auth.getUsername() == null || auth.getPassword() == null) {
 			return "signup";
 		}
 		try {
 			authority.setAuthorized(auth);
+			redirectAttributes.addFlashAttribute("infos", Collections.singletonList("Signup was a success!"));
 			return "redirect:/login";
 		} catch (Exception e) {
 			e.printStackTrace();

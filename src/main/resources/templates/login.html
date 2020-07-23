@@ -8,10 +8,19 @@
             color: white;
             margin-bottom: 15px;
         }
+        .message {
+            padding: 20px;
+            background-color: #00FFFF; /* Blue */
+            color: white;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
 
+<span>
+    <div class="message" th:each="info: ${infos}" th:text="${info}"></div>
+</span>
 <span>
     <div class="alert" th:each="error: ${errors}" th:text="${error}"></div>
 </span>
