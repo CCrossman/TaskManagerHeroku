@@ -52,8 +52,12 @@ public class Main {
 
 	@RequestMapping(value = "/save", method = RequestMethod.POST)
 	String save(HttpSession session, Model model, @RequestBody List<Task> tasks) {
+		final String username = getUsernameFromSession(session);
+		if (username == null) {
+			return "redirect:/login";
+		}
 		model.addAttribute("tasks", tasks);
-		taskRepository.setTasksByUsername(getUsernameFromSession(session), tasks);
+		taskRepository.setTasksByUsername(username, tasks);
 		return todo(session,model);
 	}
 
@@ -75,17 +79,20 @@ public class Main {
 
 	@RequestMapping("/todo")
 	String todo(HttpSession session, Model model) {
-		if (session == null || session.getAttribute("username") == null) {
-			model.addAttribute("auth", new Auth());
+		final String username = getUsernameFromSession(session);
+		if (username == null) {
 			return "redirect:/login";
 		}
 		if (!model.containsAttribute("tasks")) {
-			model.addAttribute("tasks", taskRepository.getTasksByUsername(getUsernameFromSession(session)));
+			model.addAttribute("tasks", taskRepository.getTasksByUsername(username));
 		}
 		return "todo";
 	}
 
 	private static String getUsernameFromSession(HttpSession session) {
+		if (session == null) {
+			return null;
+		}
 		final Object o = session.getAttribute("username");
 		return o == null ? null : String.valueOf(o);
 	}
