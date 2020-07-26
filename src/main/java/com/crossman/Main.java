@@ -23,6 +23,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -41,7 +44,10 @@ import java.util.List;
 public class Main {
 
 	@Autowired
-	private Authority authority;
+	private AuthenticationSetter authenticationSetter;
+
+	@Autowired
+	private Encoderator encoderator;
 
 	@Autowired
 	private TaskRepository taskRepository;
@@ -67,9 +73,10 @@ public class Main {
 			return "signup";
 		}
 		try {
-			authority.setAuthorized(auth);
+			authenticationSetter.setAuthorized(auth);
+			SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(auth.getUsername(),encoderator.encode(auth.getPassword()),Collections.singletonList(GrantedAuthorities.USER)));
 			redirectAttributes.addFlashAttribute("infos", Collections.singletonList("Signup was a success!"));
-			return "redirect:/login";
+			return "redirect:/todo";
 		} catch (Exception e) {
 			e.printStackTrace();
 			model.addAttribute("errors", Collections.singletonList("There was a problem during signup."));
@@ -93,21 +100,8 @@ public class Main {
 		if (session == null) {
 			return null;
 		}
-		final Object o = session.getAttribute("username");
-		return o == null ? null : String.valueOf(o);
-	}
-
-	@RequestMapping(value = "/login", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT})
-	String login(@ModelAttribute Auth auth, HttpSession session, Model model) {
-		if (auth == null || auth.getUsername() == null || auth.getPassword() == null) {
-			return "login";
-		}
-		if (authority.isAuthorized(auth)) {
-			session.setAttribute("username", auth.getUsername());
-			return "redirect:/todo";
-		}
-		model.addAttribute("errors", Collections.singletonList("Could not match username to password."));
-		return "login";
+		final Object o = session.getAttribute("SPRING_SECURITY_CONTEXT");
+		return o == null ? null : ((SecurityContext)o).getAuthentication().getName();
 	}
 
 	@Bean

@@ -6,9 +6,22 @@
     <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
     <link rel="stylesheet" type="text/css" href="/stylesheets/todo.css" />
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <style type="text/css">
+        .message {
+            padding: 20px;
+            background-color: #00FFFF; /* Blue */
+            color: white;
+            margin-bottom: 15px;
+        }
+    </style>
 </head>
 
 <body>
+
+<span>
+    <div class="message" th:each="info: ${infos}" th:text="${info}"></div>
+</span>
 
 <div id="myDIV" class="header">
     <h2>My To Do List</h2>
