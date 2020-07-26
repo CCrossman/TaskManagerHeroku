@@ -15,6 +15,9 @@
             margin-bottom: 15px;
         }
     </style>
+
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 </head>
 
 <body>
@@ -82,13 +85,27 @@
             json.description = description;
             return json;
         });
+        let token = $("meta[name='_csrf']").attr("content");
+        let header = $("meta[name='_csrf_header']").attr("content");
         $.ajax({
             type: "post",
             contentType: "application/json",
             url: "/save",
             data: JSON.stringify(list),
             dataType: 'json',
-            cache: false
+            cache: false,
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader(header,token);
+            },
+            success: function (dat) {
+                console.log("SUCCESS: " + dat);
+            },
+            error: function (e) {
+                console.log("ERROR: " + JSON.stringify(e));
+            },
+            done: function (o) {
+                console.log("DONE");
+            }
         })
     }
 </script>
