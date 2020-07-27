@@ -1,5 +1,7 @@
 package com.crossman;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,6 +19,8 @@ import java.util.Collections;
 
 @Component
 public final class DbAuthenticationProvider implements AuthenticationProvider, AuthenticationSetter {
+	private static final Logger logger = LoggerFactory.getLogger(DbAuthenticationProvider.class);
+
 	private static final String CREATE_IF_NOT_EXISTS = "CREATE TABLE IF NOT EXISTS public.users\n" +
 			"(\n" +
 			"    username text COLLATE pg_catalog.\"default\" NOT NULL,\n" +
@@ -33,17 +37,19 @@ public final class DbAuthenticationProvider implements AuthenticationProvider, A
 
 	@Override
 	public void setAuthorized(Auth auth) {
+		logger.debug("setAuthorized({})", auth);
 		try (Connection connection = dataSource.getConnection()) {
 			Statement stmt = connection.createStatement();
 			stmt.executeUpdate(CREATE_IF_NOT_EXISTS);
 			stmt.executeUpdate("INSERT INTO users VALUES (\'" + auth.getUsername() + "\', \'" + encoderator.encode(auth.getPassword()) + "\', now())");
 		} catch (SQLException | IOException e) {
-			e.printStackTrace();
+			logger.error("There was a problem during setAuthorized", e);
 		}
 	}
 
 	@Override
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+		logger.debug("authenticate({})", authentication);
 		try (Connection connection = dataSource.getConnection()) {
 			final Statement stmt = connection.createStatement();
 			stmt.executeUpdate(CREATE_IF_NOT_EXISTS);
@@ -52,11 +58,13 @@ public final class DbAuthenticationProvider implements AuthenticationProvider, A
 			final String password = encoderator.encode(String.valueOf(authentication.getCredentials()));
 			final ResultSet resultSet = stmt.executeQuery("SELECT timestamp from users where username = \'" + username + "\' and password = \'" + password + "\'");
 			if (resultSet.next()) {
+				logger.debug("returning a username-password authentication token for {}", username);
 				return new UsernamePasswordAuthenticationToken(username, password, Collections.singletonList(GrantedAuthorities.USER));
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("There was a problem during authenticate", e);
 		}
+		logger.debug("returning a null token");
 		return null;
 	}
 

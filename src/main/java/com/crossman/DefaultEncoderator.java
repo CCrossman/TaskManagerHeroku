@@ -1,5 +1,7 @@
 package com.crossman;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.*;
@@ -17,10 +19,12 @@ import java.util.Base64;
 
 @Component
 public final class DefaultEncoderator implements Encoderator {
+	private static final Logger logger = LoggerFactory.getLogger(DefaultEncoderator.class);
 
 	// https://howtodoinjava.com/security/aes-256-encryption-decryption/
 	@Override
 	public String encode(String str) throws IOException {
+		logger.debug("encode(...)");
 		try {
 			String secretKey = System.getenv("enc-secret");
 			String salt = System.getenv("enc-salt");
@@ -37,6 +41,7 @@ public final class DefaultEncoderator implements Encoderator {
 			cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivParameterSpec);
 			return Base64.getEncoder().encodeToString(cipher.doFinal(str.getBytes(StandardCharsets.UTF_8)));
 		} catch (InvalidKeySpecException | NoSuchAlgorithmException | BadPaddingException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException | IllegalBlockSizeException e) {
+			logger.error("There was a problem during encode", e);
 			throw new IOException(e);
 		}
 	}

@@ -19,11 +19,14 @@ package com.crossman;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -42,6 +45,7 @@ import java.util.List;
 @Controller
 @SpringBootApplication
 public class Main {
+	private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
 	@Autowired
 	private AuthenticationSetter authenticationSetter;
@@ -59,7 +63,9 @@ public class Main {
 	@RequestMapping(value = "/save", method = RequestMethod.POST)
 	String save(HttpSession session, Model model, @RequestBody List<Task> tasks) {
 		final String username = getUsernameFromSession(session);
+		logger.debug("save({},{})", username, tasks);
 		if (username == null) {
+			logger.debug("redirecting to login page");
 			return "redirect:/login";
 		}
 		model.addAttribute("tasks", tasks);
@@ -69,17 +75,28 @@ public class Main {
 
 	@RequestMapping(value = "/signup", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT})
 	String signup(@ModelAttribute Auth auth, Model model, RedirectAttributes redirectAttributes) {
+		logger.debug("signup({})", auth);
 		if (auth == null || auth.getUsername() == null || auth.getPassword() == null) {
+			logger.debug("rendering signup page");
 			return "signup";
 		}
 		try {
+			logger.debug("marking {} as authorized user", auth.getUsername());
 			authenticationSetter.setAuthorized(auth);
+
+			logger.trace("logging in as new user");
 			SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(auth.getUsername(),encoderator.encode(auth.getPassword()),Collections.singletonList(GrantedAuthorities.USER)));
+
+			logger.trace("redirect attributes set");
 			redirectAttributes.addFlashAttribute("infos", Collections.singletonList("Signup was a success!"));
+
+			logger.debug("redirecting to todo page");
 			return "redirect:/todo";
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("There was a problem during signup.", e);
 			model.addAttribute("errors", Collections.singletonList("There was a problem during signup."));
+
+			logger.debug("rendering signup page");
 			return "signup";
 		}
 	}
@@ -87,12 +104,17 @@ public class Main {
 	@RequestMapping("/todo")
 	String todo(HttpSession session, Model model) {
 		final String username = getUsernameFromSession(session);
+		logger.debug("todo({})", username);
 		if (username == null) {
+			logger.debug("redirecting to login page");
 			return "redirect:/login";
 		}
 		if (!model.containsAttribute("tasks")) {
-			model.addAttribute("tasks", taskRepository.getTasksByUsername(username));
+			final List<Task> tasks = taskRepository.getTasksByUsername(username);
+			logger.trace("tasks = {}", tasks);
+			model.addAttribute("tasks", tasks);
 		}
+		logger.debug("rendering todo page");
 		return "todo";
 	}
 
@@ -101,7 +123,15 @@ public class Main {
 			return null;
 		}
 		final Object o = session.getAttribute("SPRING_SECURITY_CONTEXT");
-		return o == null ? null : ((SecurityContext)o).getAuthentication().getName();
+		if (o == null) {
+			return null;
+		} else if (o instanceof SecurityContext) {
+			final Authentication authentication = ((SecurityContext) o).getAuthentication();
+			return authentication == null ? null : authentication.getName();
+		} else {
+			logger.error("Unexpected security context type '{}'", o.getClass());
+			return null;
+		}
 	}
 
 	@Bean

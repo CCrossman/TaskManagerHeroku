@@ -96,15 +96,6 @@
             cache: false,
             beforeSend: function (xhr) {
                 xhr.setRequestHeader(header,token);
-            },
-            success: function (dat) {
-                console.log("SUCCESS: " + dat);
-            },
-            error: function (e) {
-                console.log("ERROR: " + JSON.stringify(e));
-            },
-            done: function (o) {
-                console.log("DONE");
             }
         })
     }

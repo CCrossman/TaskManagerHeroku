@@ -3,6 +3,8 @@ package com.crossman;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +18,8 @@ import java.util.List;
 
 @Component
 public final class DbTaskRepository implements TaskRepository {
+	private static final Logger logger = LoggerFactory.getLogger(DbTaskRepository.class);
+
 	private static final String CREATE_IF_NOT_EXISTS = "CREATE TABLE IF NOT EXISTS public.tasks\n" +
 			"(\n" +
 			"    username text COLLATE pg_catalog.\"default\" NOT NULL,\n" +
@@ -32,24 +36,28 @@ public final class DbTaskRepository implements TaskRepository {
 
 	@Override
 	public List<Task> getTasksByUsername(String username) {
+		logger.debug("getTasksByUsername({})", username);
 		try (Connection connection = dataSource.getConnection()) {
 			final Statement stmt = connection.createStatement();
 			stmt.executeUpdate(CREATE_IF_NOT_EXISTS);
 
 			final ResultSet resultSet = stmt.executeQuery("SELECT taskJson from tasks where username = \'" + username + "\'");
 			if (resultSet.next()) {
-				return objectMapper.readValue(resultSet.getString("taskJson"), new TypeReference<List<Task>>() {
+				final List<Task> tasks = objectMapper.readValue(resultSet.getString("taskJson"), new TypeReference<List<Task>>() {
 				});
+				logger.debug("returning {}", tasks);
+				return tasks;
 			}
-			return Collections.emptyList();
 		} catch (SQLException | JsonProcessingException e) {
-			e.printStackTrace();
-			return Collections.emptyList();
+			logger.error("There was a problem during getTasksByUsername", e);
 		}
+		logger.debug("returning empty tasks list");
+		return Collections.emptyList();
 	}
 
 	@Override
 	public void setTasksByUsername(String username, List<Task> tasks) {
+		logger.debug("setTasksByUsername({},{})", username, tasks);
 		try (Connection connection = dataSource.getConnection()) {
 			final Statement stmt = connection.createStatement();
 			stmt.executeUpdate(CREATE_IF_NOT_EXISTS);
@@ -58,7 +66,7 @@ public final class DbTaskRepository implements TaskRepository {
 
 			stmt.executeUpdate("insert into tasks(username, taskJson, timestamp) VALUES (\'" + username + "\', \'" + taskJson + "\', now()) on conflict (username) DO UPDATE set taskJson = \'" + taskJson + "\', timestamp = now();");
 		} catch (SQLException | JsonProcessingException e) {
-			e.printStackTrace();
+			logger.error("There was a problem during setTasksByUsername", e);
 		}
 	}
 }
