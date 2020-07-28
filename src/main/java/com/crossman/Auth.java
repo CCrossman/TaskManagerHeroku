@@ -40,7 +40,7 @@ public final class Auth {
 	public String toString() {
 		return "Auth{" +
 				"username='" + username + '\'' +
-				", password='" + password + '\'' +
+				", password='<censored>'" +
 				'}';
 	}
 }
