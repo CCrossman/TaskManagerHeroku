@@ -20,14 +20,6 @@ import java.util.List;
 public final class DbTaskRepository implements TaskRepository {
 	private static final Logger logger = LoggerFactory.getLogger(DbTaskRepository.class);
 
-	private static final String CREATE_IF_NOT_EXISTS = "CREATE TABLE IF NOT EXISTS public.tasks\n" +
-			"(\n" +
-			"    username text COLLATE pg_catalog.\"default\" NOT NULL,\n" +
-			"    taskJson text COLLATE pg_catalog.\"default\" NOT NULL,\n" +
-			"    \"timestamp\" timestamp with time zone NOT NULL,\n" +
-			"    CONSTRAINT tasks_username_pkey PRIMARY KEY (username)\n" +
-			")";
-
 	@Autowired
 	private DataSource dataSource;
 
@@ -39,8 +31,6 @@ public final class DbTaskRepository implements TaskRepository {
 		logger.debug("getTasksByUsername({})", username);
 		try (Connection connection = dataSource.getConnection()) {
 			final Statement stmt = connection.createStatement();
-			stmt.executeUpdate(CREATE_IF_NOT_EXISTS);
-
 			final ResultSet resultSet = stmt.executeQuery("SELECT taskJson from tasks where username = \'" + username + "\'");
 			if (resultSet.next()) {
 				final List<Task> tasks = objectMapper.readValue(resultSet.getString("taskJson"), new TypeReference<List<Task>>() {
@@ -60,10 +50,7 @@ public final class DbTaskRepository implements TaskRepository {
 		logger.debug("setTasksByUsername({},{})", username, tasks);
 		try (Connection connection = dataSource.getConnection()) {
 			final Statement stmt = connection.createStatement();
-			stmt.executeUpdate(CREATE_IF_NOT_EXISTS);
-
-			String taskJson = objectMapper.writeValueAsString(tasks);
-
+			final String taskJson = objectMapper.writeValueAsString(tasks);
 			stmt.executeUpdate("insert into tasks(username, taskJson, timestamp) VALUES (\'" + username + "\', \'" + taskJson + "\', now()) on conflict (username) DO UPDATE set taskJson = \'" + taskJson + "\', timestamp = now();");
 		} catch (SQLException | JsonProcessingException e) {
 			logger.error("There was a problem during setTasksByUsername", e);

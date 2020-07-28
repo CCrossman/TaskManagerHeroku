@@ -19,6 +19,7 @@ package com.crossman;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import liquibase.integration.spring.SpringLiquibase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -151,4 +152,11 @@ public class Main {
 		return new ObjectMapper();
 	}
 
+	@Bean
+	public SpringLiquibase liquibase() {
+		SpringLiquibase liquibase = new SpringLiquibase();
+		liquibase.setChangeLog("classpath:dbchangelog.xml");
+		liquibase.setDataSource(dataSource());
+		return liquibase;
+	}
 }

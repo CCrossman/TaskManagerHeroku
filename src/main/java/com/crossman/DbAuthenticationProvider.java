@@ -21,14 +21,6 @@ import java.util.Collections;
 public final class DbAuthenticationProvider implements AuthenticationProvider, AuthenticationSetter {
 	private static final Logger logger = LoggerFactory.getLogger(DbAuthenticationProvider.class);
 
-	private static final String CREATE_IF_NOT_EXISTS = "CREATE TABLE IF NOT EXISTS public.users\n" +
-			"(\n" +
-			"    username text COLLATE pg_catalog.\"default\" NOT NULL,\n" +
-			"    password text COLLATE pg_catalog.\"default\" NOT NULL,\n" +
-			"    \"timestamp\" timestamp with time zone NOT NULL,\n" +
-			"    CONSTRAINT users_pkey PRIMARY KEY (username)\n" +
-			")";
-
 	@Autowired
 	private DataSource dataSource;
 
@@ -40,7 +32,6 @@ public final class DbAuthenticationProvider implements AuthenticationProvider, A
 		logger.debug("setAuthorized({})", auth);
 		try (Connection connection = dataSource.getConnection()) {
 			Statement stmt = connection.createStatement();
-			stmt.executeUpdate(CREATE_IF_NOT_EXISTS);
 			stmt.executeUpdate("INSERT INTO users VALUES (\'" + auth.getUsername() + "\', \'" + encoderator.encode(auth.getPassword()) + "\', now())");
 		} catch (SQLException | IOException e) {
 			logger.error("There was a problem during setAuthorized", e);
@@ -52,8 +43,6 @@ public final class DbAuthenticationProvider implements AuthenticationProvider, A
 		logger.debug("authenticate({})", authentication);
 		try (Connection connection = dataSource.getConnection()) {
 			final Statement stmt = connection.createStatement();
-			stmt.executeUpdate(CREATE_IF_NOT_EXISTS);
-
 			final String username = authentication.getName();
 			final String password = encoderator.encode(String.valueOf(authentication.getCredentials()));
 			final ResultSet resultSet = stmt.executeQuery("SELECT timestamp from users where username = \'" + username + "\' and password = \'" + password + "\'");
