@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.sql2o.Sql2o;
 
 import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
@@ -158,5 +159,10 @@ public class Main {
 		liquibase.setChangeLog("classpath:dbchangelog.xml");
 		liquibase.setDataSource(dataSource());
 		return liquibase;
+	}
+
+	@Bean
+	public Sql2o sql2o() {
+		return new Sql2o(dataSource());
 	}
 }
