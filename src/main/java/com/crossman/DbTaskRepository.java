@@ -2,7 +2,6 @@ package com.crossman;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,9 +10,6 @@ import org.springframework.stereotype.Component;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Collections;
 import java.util.List;
 
@@ -22,6 +18,7 @@ public final class DbTaskRepository implements TaskRepository {
 	private static final Logger logger = LoggerFactory.getLogger(DbTaskRepository.class);
 
 	private static final String QUERY  = "SELECT taskJson from tasks where username = :usr";
+	private static final String INSERT = "INSERT INTO tasks (username, taskJson, timestamp) VALUES (:usr, :task, now()) ON CONFLICT (username) DO UPDATE set taskJson = :task, timestamp = now()";
 
 	@Autowired
 	private ObjectMapper objectMapper;
@@ -49,8 +46,6 @@ public final class DbTaskRepository implements TaskRepository {
 		logger.debug("returning empty tasks list");
 		return Collections.emptyList();
 	}
-
-	private static final String INSERT = "INSERT INTO tasks (username, taskJson, timestamp) VALUES (:usr, :task, now()) ON CONFLICT (username) DO UPDATE set taskJson = :task, timestamp = now()";
 
 	@Override
 	public void setTasksByUsername(String username, List<Task> tasks) {
