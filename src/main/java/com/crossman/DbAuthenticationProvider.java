@@ -10,16 +10,28 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 import org.sql2o.Connection;
+import org.sql2o.ResultSetHandler;
 import org.sql2o.Sql2o;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
 
 @Component
 public final class DbAuthenticationProvider implements AuthenticationProvider, AuthenticationSetter {
 	private static final Logger logger = LoggerFactory.getLogger(DbAuthenticationProvider.class);
-	private static final String INSERT = "INSERT INTO users (username, password, timestamp) VALUES (:usr, :pwd, now())";
-	private static final String QUERY  = "SELECT COUNT(*) from users where username = :usr and password = :pwd";
+	private static final String USER_INSERT = "INSERT INTO users (username, password, timestamp) VALUES (:usr, :pwd, now())";
+	private static final String USER_QUERY  = "SELECT COUNT(*) from users where username = :usr and password = :pwd";
+	private static final String ROLE_INSERT = "INSERT INTO roles (username, role) VALUES (:usr, 'USER')";
+	private static final String ROLE_QUERY  = "SELECT role FROM roles where username = :usr";
+
+	private static final ResultSetHandler<GrantedAuthorities> ROLE_PARSER = new ResultSetHandler<GrantedAuthorities>() {
+		@Override
+		public GrantedAuthorities handle(ResultSet resultSet) throws SQLException {
+			return GrantedAuthorities.valueOf(resultSet.getString("role"));
+		}
+	};
 
 	@Autowired
 	private Encoderator encoderator;
@@ -31,9 +43,13 @@ public final class DbAuthenticationProvider implements AuthenticationProvider, A
 	public void setAuthorized(Auth auth) {
 		logger.debug("setAuthorized({})", auth);
 		try (Connection conn = sql2o.open()) {
-			conn.createQuery(INSERT)
+			conn.createQuery(USER_INSERT)
 					.addParameter("usr", auth.getUsername())
 					.addParameter("pwd", encoderator.encode(auth.getPassword()))
+					.executeUpdate();
+
+			conn.createQuery(ROLE_INSERT)
+					.addParameter("usr", auth.getUsername())
 					.executeUpdate();
 		} catch (Exception e) {
 			logger.error("There was a problem during setAuthorized", e);
@@ -46,13 +62,17 @@ public final class DbAuthenticationProvider implements AuthenticationProvider, A
 		try (Connection conn = sql2o.open()) {
 			final String username = authentication.getName();
 			final String password = encoderator.encode(String.valueOf(authentication.getCredentials()));
-			final int count = conn.createQuery(QUERY)
+			final int count = conn.createQuery(USER_QUERY)
 					.addParameter("usr", username)
 					.addParameter("pwd", password)
 					.executeScalar(Integer.class);
 			if (count > 0) {
+				final List<GrantedAuthorities> roles = conn.createQuery(ROLE_QUERY)
+						.addParameter("usr", username)
+						.executeAndFetch(ROLE_PARSER);
+
 				logger.debug("returning a username-password authentication token for {}", username);
-				return new UsernamePasswordAuthenticationToken(username, password, Collections.singletonList(GrantedAuthorities.USER));
+				return new UsernamePasswordAuthenticationToken(username, password, roles);
 			}
 		} catch (IOException e) {
 			logger.error("Problem during authentication step.", e);

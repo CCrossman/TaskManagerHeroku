@@ -47,4 +47,22 @@
         </createTable>
     </changeSet>
 
+    <changeSet id="2020-07-29-001" author="Chris">
+        <createTable tableName="roles">
+            <column name="username" type="text">
+                <constraints nullable="false" />
+            </column>
+            <column name="role" type="text">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="roles" columnNames="username,role" />
+
+        <sql>
+            INSERT INTO roles (username,role)
+            SELECT username, 'USER' from users
+        </sql>
+    </changeSet>
+
 </databaseChangeLog>
