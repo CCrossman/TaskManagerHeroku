@@ -19,11 +19,12 @@ import java.sql.SQLException;
 import java.util.List;
 
 @Component
-public final class DbAuthenticationProvider implements AuthenticationProvider, AuthenticationSetter {
+public final class DbAuthenticationProvider implements AuthenticationProvider, AuthenticationSetter, Promoter {
 	private static final Logger logger = LoggerFactory.getLogger(DbAuthenticationProvider.class);
 	private static final String USER_INSERT = "INSERT INTO users (username, password, timestamp) VALUES (:usr, :pwd, now())";
 	private static final String USER_QUERY  = "SELECT COUNT(*) from users where username = :usr and password = :pwd";
 	private static final String ROLE_INSERT = "INSERT INTO roles (username, role) VALUES (:usr, 'USER')";
+	private static final String ROLE_INSERT_ADMIN = "INSERT INTO roles (username, role) VALUES (:usr, 'ADMIN')";
 	private static final String ROLE_QUERY  = "SELECT role FROM roles where username = :usr";
 
 	private static final ResultSetHandler<GrantedAuthorities> ROLE_PARSER = new ResultSetHandler<GrantedAuthorities>() {
@@ -38,6 +39,18 @@ public final class DbAuthenticationProvider implements AuthenticationProvider, A
 
 	@Autowired
 	private Sql2o sql2o;
+
+	@Override
+	public void promote(String username) {
+		logger.debug("promote({})", username);
+		try (Connection conn = sql2o.open()) {
+			conn.createQuery(ROLE_INSERT_ADMIN)
+					.addParameter("usr", username)
+					.executeUpdate();
+		} catch (Exception e) {
+			logger.error("There was a problem during promote", e);
+		}
+	}
 
 	@Override
 	public void setAuthorized(Auth auth) {

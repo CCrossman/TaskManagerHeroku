@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+
+<head>
+    <title>Heroku Task Manager</title>
+    <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
+    <link rel="stylesheet" type="text/css" href="/stylesheets/todo.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <style type="text/css">
+        .message {
+            padding: 20px;
+            background-color: #00FFFF; /* Blue */
+            color: white;
+            margin-bottom: 15px;
+        }
+    </style>
+
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+</head>
+
+<body>
+
+<span>
+    <div class="message" th:each="info: ${infos}" th:text="${info}"></div>
+</span>
+
+<div>
+    <input type="text" id="myInput" placeholder="Username...">
+    <span onclick="promote()" class="addBtn" id="addBtn">Promote</span>
+</div>
+
+</body>
+</html>
+<script>
+    // Press "Promote" button when press enter in text field.
+    let txtMyInput = document.getElementById("myInput");
+    txtMyInput.addEventListener('keyup', function(ev) {
+        // "Enter" key is #13
+        if (ev.keyCode === 13) {
+            ev.preventDefault();
+            document.getElementById("addBtn").click();
+        }
+    }, false);
+
+    // Create a new list item when clicking on the "Add" button
+    function promote() {
+        let inputValue = txtMyInput.value;
+        if (inputValue === '') {
+            alert("You must write something!");
+        } else {
+            promoteNow(inputValue);
+        }
+        txtMyInput.value = "";
+    }
+
+    function promoteNow(username) {
+        let token  = $("meta[name='_csrf']").attr("content");
+        let header = $("meta[name='_csrf_header']").attr("content");
+        $.ajax({
+            type: "post",
+            contentType: "application/json",
+            url: "/promote/" + username,
+            data: {},
+            dataType: 'json',
+            cache: false,
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader(header,token);
+            }
+        })
+    }
+</script>

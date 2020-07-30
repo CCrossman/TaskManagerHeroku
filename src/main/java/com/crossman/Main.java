@@ -26,21 +26,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.sql2o.Sql2o;
 
 import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -56,23 +57,46 @@ public class Main {
 	private Encoderator encoderator;
 
 	@Autowired
+	private Promoter promoter;
+
+	@Autowired
 	private TaskRepository taskRepository;
 
 	public static void main(String[] args) throws Exception {
 		SpringApplication.run(Main.class, args);
 	}
 
+	@RequestMapping(value = "/promote/{username}", method = RequestMethod.POST)
+	ResponseEntity<String> promote(HttpSession session, @PathVariable("username") String promoteeUsername) {
+		final SecurityContext sc = getSecurityContext(session);
+		final String username = getUsernameFromSecurityContext(sc);
+
+		logger.debug("promote({},{})", username, promoteeUsername);
+		if (username == null) {
+			logger.debug("username cannot be blank");
+			return new ResponseEntity<>("Username cannot be blank", HttpStatus.FORBIDDEN);
+		}
+		final Collection<? extends GrantedAuthority> authorities = getAuthoritiesFromSecurityContext(sc);
+		if (authorities.contains(GrantedAuthorities.ADMIN)) {
+			logger.debug("{} has promoted {} successfully.", username, promoteeUsername);
+			promoter.promote(promoteeUsername);
+			return new ResponseEntity<>(username + " has promoted " + promoteeUsername + " successfully", HttpStatus.OK);
+		}
+		logger.debug("{} must be an ADMIN to promote someone.", username);
+		return new ResponseEntity<>(username + " must be an ADMIN to promote someone.", HttpStatus.FORBIDDEN);
+	}
+
 	@RequestMapping(value = "/save", method = RequestMethod.POST)
-	String save(HttpSession session, Model model, @RequestBody List<Task> tasks) {
+	ResponseEntity<String> save(HttpSession session, @RequestBody List<Task> tasks) {
 		final String username = getUsernameFromSession(session);
 		logger.debug("save({},{})", username, tasks);
 		if (username == null) {
-			logger.debug("redirecting to login page");
-			return "redirect:/login";
+			logger.debug("username cannot be blank");
+			return new ResponseEntity<>("Username cannot be blank", HttpStatus.FORBIDDEN);
 		}
-		model.addAttribute("tasks", tasks);
+		logger.debug("{} task list updated.", username);
 		taskRepository.setTasksByUsername(username, tasks);
-		return todo(session,model);
+		return new ResponseEntity<>(username + " task list updated.", HttpStatus.OK);
 	}
 
 	@RequestMapping(value = "/signup", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT})
@@ -120,7 +144,13 @@ public class Main {
 		return "todo";
 	}
 
-	private static String getUsernameFromSession(HttpSession session) {
+	@RequestMapping("/admin")
+	String admin() {
+		logger.debug("rendering admin page");
+		return "admin";
+	}
+
+	private static SecurityContext getSecurityContext(HttpSession session) {
 		if (session == null) {
 			return null;
 		}
@@ -128,12 +158,37 @@ public class Main {
 		if (o == null) {
 			return null;
 		} else if (o instanceof SecurityContext) {
-			final Authentication authentication = ((SecurityContext) o).getAuthentication();
-			return authentication == null ? null : authentication.getName();
+			return ((SecurityContext) o);
 		} else {
 			logger.error("Unexpected security context type '{}'", o.getClass());
 			return null;
 		}
+	}
+
+	private static String getUsernameFromSession(HttpSession session) {
+		return getUsernameFromSecurityContext(getSecurityContext(session));
+	}
+
+	private static String getUsernameFromSecurityContext(SecurityContext sc) {
+		if (sc == null) {
+			return null;
+		}
+		Authentication authentication = sc.getAuthentication();
+		if (authentication == null) {
+			return null;
+		}
+		return authentication.getName();
+	}
+
+	private static Collection<? extends GrantedAuthority> getAuthoritiesFromSecurityContext(SecurityContext sc) {
+		if (sc == null) {
+			return Collections.emptyList();
+		}
+		Authentication authentication = sc.getAuthentication();
+		if (authentication == null) {
+			return Collections.emptyList();
+		}
+		return authentication.getAuthorities();
 	}
 
 	@Bean

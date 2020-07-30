@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+
+<head>
+    <title>Heroku Task Manager</title>
+    <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
+    <link rel="stylesheet" type="text/css" href="/stylesheets/todo.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <style type="text/css">
+        .message {
+            padding: 20px;
+            background-color: #00FFFF; /* Blue */
+            color: white;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+<span>
+    <div class="message" th:each="info: ${infos}" th:text="${info}"></div>
+</span>
+
+</body>
+</html>
