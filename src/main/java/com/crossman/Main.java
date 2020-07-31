@@ -51,52 +51,19 @@ public class Main {
 	private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
 	@Autowired
+	private ApiController apiController;
+
+	@Autowired
 	private AuthenticationSetter authenticationSetter;
 
 	@Autowired
 	private Encoderator encoderator;
 
 	@Autowired
-	private Promoter promoter;
-
-	@Autowired
 	private TaskRepository taskRepository;
 
 	public static void main(String[] args) throws Exception {
 		SpringApplication.run(Main.class, args);
-	}
-
-	@RequestMapping(value = "/promote/{username}", method = RequestMethod.POST)
-	ResponseEntity<String> promote(HttpSession session, @PathVariable("username") String promoteeUsername) {
-		final SecurityContext sc = getSecurityContext(session);
-		final String username = getUsernameFromSecurityContext(sc);
-
-		logger.debug("promote({},{})", username, promoteeUsername);
-		if (username == null) {
-			logger.debug("username cannot be blank");
-			return new ResponseEntity<>("Username cannot be blank", HttpStatus.FORBIDDEN);
-		}
-		final Collection<? extends GrantedAuthority> authorities = getAuthoritiesFromSecurityContext(sc);
-		if (authorities.contains(GrantedAuthorities.ADMIN)) {
-			logger.debug("{} has promoted {} successfully.", username, promoteeUsername);
-			promoter.promote(promoteeUsername);
-			return new ResponseEntity<>(username + " has promoted " + promoteeUsername + " successfully", HttpStatus.OK);
-		}
-		logger.debug("{} must be an ADMIN to promote someone.", username);
-		return new ResponseEntity<>(username + " must be an ADMIN to promote someone.", HttpStatus.FORBIDDEN);
-	}
-
-	@RequestMapping(value = "/save", method = RequestMethod.POST)
-	ResponseEntity<String> save(HttpSession session, @RequestBody List<Task> tasks) {
-		final String username = getUsernameFromSession(session);
-		logger.debug("save({},{})", username, tasks);
-		if (username == null) {
-			logger.debug("username cannot be blank");
-			return new ResponseEntity<>("Username cannot be blank", HttpStatus.FORBIDDEN);
-		}
-		logger.debug("{} task list updated.", username);
-		taskRepository.setTasksByUsername(username, tasks);
-		return new ResponseEntity<>(username + " task list updated.", HttpStatus.OK);
 	}
 
 	@RequestMapping(value = "/signup", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT})
@@ -141,12 +108,14 @@ public class Main {
 			model.addAttribute("tasks", tasks);
 		}
 		logger.debug("rendering todo page");
+		model.addAttribute("jwt", apiController.jwtCalculate(session));
 		return "todo";
 	}
 
 	@RequestMapping("/admin")
-	String admin() {
+	String admin(HttpSession session, Model model) {
 		logger.debug("rendering admin page");
+		model.addAttribute("jwt", apiController.jwtCalculate(session));
 		return "admin";
 	}
 
