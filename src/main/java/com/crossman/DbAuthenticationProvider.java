@@ -16,13 +16,16 @@ import org.sql2o.Sql2o;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 
 @Component
-public final class DbAuthenticationProvider implements AuthenticationProvider, AuthenticationSetter, Promoter {
+public final class DbAuthenticationProvider implements AuthenticationProvider, AuthenticationSetter, Promoter, UserDeleter, UserLister {
 	private static final Logger logger = LoggerFactory.getLogger(DbAuthenticationProvider.class);
 	private static final String USER_INSERT = "INSERT INTO users (username, password, timestamp) VALUES (:usr, :pwd, now())";
 	private static final String USER_QUERY  = "SELECT COUNT(*) from users where username = :usr and password = :pwd";
+	private static final String USER_DELETE = "DELETE FROM users where username = :usr";
+	private static final String USER_LIST   = "SELECT username from users";
 	private static final String ROLE_INSERT = "INSERT INTO roles (username, role) VALUES (:usr, 'USER')";
 	private static final String ROLE_INSERT_ADMIN = "INSERT INTO roles (username, role) VALUES (:usr, 'ADMIN')";
 	private static final String ROLE_QUERY  = "SELECT role FROM roles where username = :usr";
@@ -39,6 +42,32 @@ public final class DbAuthenticationProvider implements AuthenticationProvider, A
 
 	@Autowired
 	private Sql2o sql2o;
+
+	@Override
+	public boolean deleteUser(String username) {
+		logger.debug("deleteUser({}", username);
+		try (Connection conn = sql2o.open()) {
+			conn.createQuery(USER_DELETE)
+					.addParameter("usr", username)
+					.executeUpdate();
+			return true;
+		} catch (Exception e) {
+			logger.error("There was a problem during deleteUser", e);
+			return false;
+		}
+	}
+
+	@Override
+	public List<String> getUsers() {
+		logger.debug("getUsers()");
+		try (Connection conn = sql2o.open()) {
+			return conn.createQuery(USER_LIST)
+					.executeScalarList(String.class);
+		} catch (Exception e) {
+			logger.error("There was a problem during getUsers()", e);
+			return Collections.emptyList();
+		}
+	}
 
 	@Override
 	public void promote(String username) {

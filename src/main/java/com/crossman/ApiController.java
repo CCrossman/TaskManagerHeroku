@@ -34,6 +34,12 @@ public class ApiController {
 	@Autowired
 	private TaskRepository taskRepository;
 
+	@Autowired
+	private UserDeleter userDeleter;
+
+	@Autowired
+	private UserLister userLister;
+
 	@RequestMapping(value = "/jwt", method = RequestMethod.POST)
 	public Permissions jwtAuth(@RequestHeader("Authorization") String bearer) {
 		logger.debug(bearer);
@@ -99,6 +105,41 @@ public class ApiController {
 			return new ResponseEntity<>(permissions.username + " task list updated.", HttpStatus.OK);
 		}
 		return new ResponseEntity<>("invalid permissions", HttpStatus.FORBIDDEN);
+	}
+
+	@RequestMapping(value = "/users", method = RequestMethod.GET)
+	ResponseEntity<List<String>> getUsers(@RequestHeader("Authorization") String bearer) {
+		logger.debug("getUsers({})", bearer);
+		final Permissions permissions = jwtAuth(bearer);
+		if (permissions.user && permissions.admin) {
+			logger.debug("{} retrieved user list", permissions.username);
+			return new ResponseEntity<>(userLister.getUsers(), HttpStatus.OK);
+		}
+		return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+	}
+
+	@RequestMapping(value = "/user/{username}", method = RequestMethod.GET)
+	ResponseEntity<UserSummary> getUser(@RequestHeader("Authorization") String bearer, @PathVariable("username") String targetUsername) {
+		logger.debug("getUser({},{})", bearer, targetUsername);
+		final Permissions permissions = jwtAuth(bearer);
+		if (permissions.user && permissions.admin) {
+			logger.debug("{} retrieved user summary for {}", permissions.username, targetUsername);
+			return new ResponseEntity<>(new UserSummary(targetUsername, taskRepository.getTasksByUsername(targetUsername)), HttpStatus.OK);
+		}
+		return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+	}
+
+	@RequestMapping(value = "/user/{username}", method = RequestMethod.DELETE)
+	ResponseEntity<UserSummary> deleteUser(@RequestHeader("Authorization") String bearer, @PathVariable("username") String targetUsername) {
+		logger.debug("deleteUser({},{})", bearer, targetUsername);
+		final Permissions permissions = jwtAuth(bearer);
+		if (permissions.user && permissions.admin) {
+			logger.debug("{} deleted user {}", permissions.username, targetUsername);
+			List<Task> tasks = taskRepository.getTasksByUsername(targetUsername);
+			userDeleter.deleteUser(targetUsername);
+			return new ResponseEntity<>(new UserSummary(targetUsername, tasks), HttpStatus.OK);
+		}
+		return new ResponseEntity<>(HttpStatus.FORBIDDEN);
 	}
 
 	private static Date toDate(ZonedDateTime zdt) {
