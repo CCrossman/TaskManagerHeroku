@@ -56,16 +56,26 @@
 
     function promoteNow(username) {
         let jwt = $("meta[name='_jwt']").attr("content");
+
         $.ajax({
             type: "post",
             contentType: "application/json",
-            url: "/api/promote/" + username,
-            data: {},
-            dataType: 'json',
+            url: "/api/jwt/extend",
+            data: jwt,
+            dataType: 'text',
             cache: false,
-            beforeSend: function(xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + jwt);
-            }
-        })
+        }).then(function(data) {
+            return $.ajax({
+                type: "post",
+                contentType: "application/json",
+                url: "/api/promote/" + username,
+                data: {},
+                dataType: 'json',
+                cache: false,
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + data);
+                }
+            });
+        });
     }
 </script>

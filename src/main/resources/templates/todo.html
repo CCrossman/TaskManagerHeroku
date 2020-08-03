@@ -78,23 +78,34 @@
     }
 
     function save() {
-        let list = $.map($('#myUL').children(), function(el) {
-            let description = $(el).text();
-            let json = {};
-            json.description = description;
-            return json;
-        });
         let jwt = $("meta[name='_jwt']").attr("content");
+
         $.ajax({
             type: "post",
             contentType: "application/json",
-            url: "/api/save",
-            data: JSON.stringify(list),
-            dataType: 'json',
+            url: "/api/jwt/extend",
+            data: jwt,
+            dataType: 'text',
             cache: false,
-            beforeSend: function(xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + jwt);
-            }
-        })
+        }).then(function(data) {
+            let list = $.map($('#myUL').children(), function(el) {
+                let description = $(el).text();
+                let json = {};
+                json.description = description;
+                return json;
+            });
+
+            return $.ajax({
+                type: "post",
+                contentType: "application/json",
+                url: "/api/save",
+                data: JSON.stringify(list),
+                dataType: 'json',
+                cache: false,
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + data);
+                }
+            })
+        });
     }
 </script>
