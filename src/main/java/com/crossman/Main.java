@@ -26,12 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -41,7 +36,6 @@ import org.sql2o.Sql2o;
 
 import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -96,7 +90,7 @@ public class Main {
 
 	@RequestMapping("/todo")
 	String todo(HttpSession session, Model model) {
-		final String username = getUsernameFromSession(session);
+		final String username = SessionUtils.getUsernameFromSession(session);
 		logger.debug("todo({})", username);
 		if (username == null) {
 			logger.debug("redirecting to login page");
@@ -117,47 +111,6 @@ public class Main {
 		logger.debug("rendering admin page");
 		model.addAttribute("jwt", apiController.jwtCalculate(session));
 		return "admin";
-	}
-
-	private static SecurityContext getSecurityContext(HttpSession session) {
-		if (session == null) {
-			return null;
-		}
-		final Object o = session.getAttribute("SPRING_SECURITY_CONTEXT");
-		if (o == null) {
-			return null;
-		} else if (o instanceof SecurityContext) {
-			return ((SecurityContext) o);
-		} else {
-			logger.error("Unexpected security context type '{}'", o.getClass());
-			return null;
-		}
-	}
-
-	private static String getUsernameFromSession(HttpSession session) {
-		return getUsernameFromSecurityContext(getSecurityContext(session));
-	}
-
-	private static String getUsernameFromSecurityContext(SecurityContext sc) {
-		if (sc == null) {
-			return null;
-		}
-		Authentication authentication = sc.getAuthentication();
-		if (authentication == null) {
-			return null;
-		}
-		return authentication.getName();
-	}
-
-	private static Collection<? extends GrantedAuthority> getAuthoritiesFromSecurityContext(SecurityContext sc) {
-		if (sc == null) {
-			return Collections.emptyList();
-		}
-		Authentication authentication = sc.getAuthentication();
-		if (authentication == null) {
-			return Collections.emptyList();
-		}
-		return authentication.getAuthorities();
 	}
 
 	@Bean

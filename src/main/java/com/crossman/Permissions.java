@@ -12,4 +12,18 @@ public final class Permissions {
 		this.user = user;
 		this.admin = admin;
 	}
+
+	public static Permissions checkAdmin(Permissions permissions) throws InsufficientPermissionsException {
+		if (permissions.user && permissions.admin) {
+			return permissions;
+		}
+		throw new InsufficientPermissionsException(permissions.username + " must be an ADMIN");
+	}
+
+	public static Permissions checkUser(Permissions permissions) throws InsufficientPermissionsException {
+		if (permissions.user) {
+			return permissions;
+		}
+		throw new InsufficientPermissionsException(permissions.username + " must be a USER");
+	}
 }
