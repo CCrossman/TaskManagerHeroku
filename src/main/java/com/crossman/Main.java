@@ -16,6 +16,7 @@
 
 package com.crossman;
 
+import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -23,6 +24,7 @@ import liquibase.integration.spring.SpringLiquibase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -141,5 +143,20 @@ public class Main {
 	@Bean
 	public Sql2o sql2o() {
 		return new Sql2o(dataSource());
+	}
+
+	@Bean
+	@Qualifier("issuer")
+	public String issuer() {
+		return "Chris Crossman";
+	}
+
+	@Bean
+	public Algorithm algorithm() {
+		final String secret = System.getenv("jwt-secret");
+		if (secret == null) {
+			throw new NullPointerException("JWT secret cannot be null");
+		}
+		return Algorithm.HMAC256(secret);
 	}
 }

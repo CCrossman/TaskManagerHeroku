@@ -2,30 +2,45 @@ package com.crossman;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.stereotype.Component;
 
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Date;
 
+@Component
 public final class JWTUtils {
-	public static final Algorithm ALGORITHM = Algorithm.HMAC256("secret");
-	public static final String ISSUER = "Chris Crossman";
 
-	private JWTUtils() {}
+	@Autowired
+	private Algorithm algorithm;
 
-	public static String createToken(String username, Collection<? extends GrantedAuthority> authorities) {
+	@Autowired
+	@Qualifier("issuer")
+	private String issuer;
+
+	public Algorithm getAlgorithm() {
+		return algorithm;
+	}
+
+	public String getIssuer() {
+		return issuer;
+	}
+
+	public String createToken(String username, Collection<? extends GrantedAuthority> authorities) {
 		return createToken(username, authorities, ZonedDateTime.now());
 	}
 
-	public static String createToken(String username, Collection<? extends GrantedAuthority> authorities, ZonedDateTime now) {
+	public String createToken(String username, Collection<? extends GrantedAuthority> authorities, ZonedDateTime now) {
 		return JWT.create()
-				.withIssuer(ISSUER)
+				.withIssuer(issuer)
 				.withClaim("username", username)
 				.withClaim("user", authorities.contains(GrantedAuthorities.USER))
 				.withClaim("admin", authorities.contains(GrantedAuthorities.ADMIN))
 				.withExpiresAt(toDate(now.plusMinutes(1)))
-				.sign(ALGORITHM);
+				.sign(algorithm);
 	}
 
 	private static Date toDate(ZonedDateTime zdt) {

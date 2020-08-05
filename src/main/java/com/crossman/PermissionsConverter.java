@@ -2,6 +2,7 @@ package com.crossman;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 
@@ -11,10 +12,13 @@ import java.util.Date;
 public class PermissionsConverter implements Converter<String,Permissions> {
 	private static final int PREFIX = "bearer ".length();
 
+	@Autowired
+	private JWTUtils jwtUtils;
+
 	@Override
 	public Permissions convert(String bearer) {
-		final DecodedJWT decodedJWT = JWT.require(JWTUtils.ALGORITHM)
-				.withIssuer(JWTUtils.ISSUER)
+		final DecodedJWT decodedJWT = JWT.require(jwtUtils.getAlgorithm())
+				.withIssuer(jwtUtils.getIssuer())
 				.build()
 				.verify(bearer.substring(PREFIX));
 

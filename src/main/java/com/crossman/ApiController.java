@@ -21,6 +21,9 @@ public class ApiController {
 	private static final Logger logger = LoggerFactory.getLogger(ApiController.class);
 
 	@Autowired
+	private JWTUtils jwtUtils;
+
+	@Autowired
 	private Promoter promoter;
 
 	@Autowired
@@ -45,7 +48,7 @@ public class ApiController {
 			throw new IllegalArgumentException("token must be owned by the session user");
 		}
 		final String issuer = decodedJWT.getIssuer();
-		if (!JWTUtils.ISSUER.equals(issuer)) {
+		if (!jwtUtils.getIssuer().equals(issuer)) {
 			throw new IllegalArgumentException("invalid issuer '" + issuer + "'");
 		}
 		// if expired or not expired, create a new token
@@ -116,7 +119,7 @@ public class ApiController {
 		return new UserSummary(targetUsername, tasks);
 	}
 
-	private static String createToken(SecurityContext sc, String username) {
-		return JWTUtils.createToken(username, getAuthoritiesFromSecurityContext(sc));
+	private String createToken(SecurityContext sc, String username) {
+		return jwtUtils.createToken(username, getAuthoritiesFromSecurityContext(sc));
 	}
 }
