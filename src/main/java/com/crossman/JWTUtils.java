@@ -1,6 +1,7 @@
 package com.crossman;
 
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,12 +22,33 @@ public final class JWTUtils {
 	@Qualifier("issuer")
 	private String issuer;
 
+	private JWTVerifier verifier, verifierExt;
+
 	public Algorithm getAlgorithm() {
 		return algorithm;
 	}
 
 	public String getIssuer() {
 		return issuer;
+	}
+
+	public JWTVerifier getVerifier() {
+		if (verifier == null) {
+			verifier = JWT.require(algorithm)
+				.withIssuer(issuer)
+				.build();
+		}
+		return verifier;
+	}
+
+	public JWTVerifier getVerifierForExtendableTokens() {
+		if (verifierExt == null) {
+			verifierExt = JWT.require(algorithm)
+				.withIssuer(issuer)
+				.acceptExpiresAt(365 * 24 * 60 * 60)     // one year
+				.build();
+		}
+		return verifierExt;
 	}
 
 	public String createToken(String username, Collection<? extends GrantedAuthority> authorities) {

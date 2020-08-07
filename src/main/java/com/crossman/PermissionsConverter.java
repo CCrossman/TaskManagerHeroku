@@ -17,11 +17,7 @@ public class PermissionsConverter implements Converter<String,Permissions> {
 
 	@Override
 	public Permissions convert(String bearer) {
-		final DecodedJWT decodedJWT = JWT.require(jwtUtils.getAlgorithm())
-				.withIssuer(jwtUtils.getIssuer())
-				.build()
-				.verify(bearer.substring(PREFIX));
-
+		final DecodedJWT decodedJWT = jwtUtils.getVerifier().verify(bearer.substring(PREFIX));
 		final String username = decodedJWT.getClaim("username").asString();
 		final boolean isUser = decodedJWT.getClaim("user").asBoolean();
 		final boolean isAdmin = decodedJWT.getClaim("admin").asBoolean();

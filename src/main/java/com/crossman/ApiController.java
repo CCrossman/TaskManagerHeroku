@@ -1,6 +1,5 @@
 package com.crossman;
 
-import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,17 +40,14 @@ public class ApiController {
 		final String username = getUsernameFromSecurityContext(sc);
 
 		logger.debug("jwtExtend({},{})", username, jwt);
-		final DecodedJWT decodedJWT = JWT.decode(jwt);
+
+		final DecodedJWT decodedJWT = jwtUtils.getVerifierForExtendableTokens().verify(jwt);
 		final String tokenUsername = decodedJWT.getClaim("username").asString();
 		if (!username.equals(tokenUsername)) {
 			logger.debug("comparing {} to {}", username, tokenUsername);
 			throw new IllegalArgumentException("token must be owned by the session user");
 		}
-		final String issuer = decodedJWT.getIssuer();
-		if (!jwtUtils.getIssuer().equals(issuer)) {
-			throw new IllegalArgumentException("invalid issuer '" + issuer + "'");
-		}
-		// if expired or not expired, create a new token
+		// if valid, create a new token
 		return createToken(sc, username);
 	}
 
