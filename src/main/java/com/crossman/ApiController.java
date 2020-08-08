@@ -34,6 +34,13 @@ public class ApiController {
 	@Autowired
 	private UserLister userLister;
 
+	public String jwtCalculate(HttpSession session) {
+		final SecurityContext sc = getSecurityContext(session);
+		final String username = getUsernameFromSecurityContext(sc);
+		logger.debug("jwtCalculate({})", username);
+		return createToken(sc, username);
+	}
+
 	@RequestMapping(value = "/jwt/extend", method = RequestMethod.POST)
 	public String jwtExtend(HttpSession session, @RequestBody String jwt) {
 		final SecurityContext sc = getSecurityContext(session);
@@ -48,20 +55,6 @@ public class ApiController {
 			throw new IllegalArgumentException("token must be owned by the session user");
 		}
 		// if valid, create a new token
-		return createToken(sc, username);
-	}
-
-	@RequestMapping(value = "/jwt", method = RequestMethod.POST, headers = {"Authorization"})
-	public Permissions jwtAuth(@RequestHeader("Authorization") Permissions permissions) {
-		logger.debug("{}", permissions);
-		return permissions;
-	}
-
-	@RequestMapping(value = "/jwt", method = RequestMethod.GET)
-	public String jwtCalculate(HttpSession session) {
-		final SecurityContext sc = getSecurityContext(session);
-		final String username = getUsernameFromSecurityContext(sc);
-		logger.debug("jwtCalculate({})", username);
 		return createToken(sc, username);
 	}
 
