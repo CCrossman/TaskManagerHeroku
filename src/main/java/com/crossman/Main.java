@@ -29,6 +29,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -38,6 +40,7 @@ import org.sql2o.Sql2o;
 
 import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -74,7 +77,10 @@ public class Main {
 			authenticationSetter.setAuthorized(auth);
 
 			logger.trace("logging in as new user");
-			SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(auth.getUsername(),encoderator.encode(auth.getPassword()),Collections.singletonList(GrantedAuthorities.USER)));
+			final String password = encoderator.encode(auth.getPassword());
+			final List<GrantedAuthorities> authorities = Collections.singletonList(GrantedAuthorities.USER);
+			final UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(auth.getUsername(), password, authorities);
+			SecurityContextHolder.getContext().setAuthentication(token);
 
 			logger.trace("redirect attributes set");
 			redirectAttributes.addFlashAttribute("infos", Collections.singletonList("Signup was a success!"));
@@ -111,6 +117,12 @@ public class Main {
 	@RequestMapping("/admin")
 	String admin(HttpSession session, Model model) {
 		logger.debug("rendering admin page");
+		final SecurityContext sessionContext = SessionUtils.getSecurityContext(session);
+		final String username = SessionUtils.getUsernameFromSession(session);
+		if (username == null || !SessionUtils.getAuthoritiesFromSecurityContext(sessionContext).contains(GrantedAuthorities.ADMIN)) {
+			logger.debug("rediecting to login page");
+			return "redirect:/login";
+		}
 		model.addAttribute("jwt", apiController.jwtCalculate(session));
 		return "admin";
 	}
